@@ -25,7 +25,9 @@ protected:
 
     std::unordered_map<int, std::vector<Entity>> elements = {};
 
-    int threads = 4;
+    int threads = 8;
+
+    int threadThrottle = 0;
 
     int currentInsertIndex = 0;
 
@@ -33,9 +35,9 @@ protected:
 
     int bucketHeight = 0;
 
-    int rows = 4;
+    int rows = 10;
 
-    int cols = 4;
+    int cols = 10;
 
     int debug = 0;
 
@@ -60,6 +62,10 @@ protected:
     void add(const Entity &e);
 
     void initBuckets();
+
+    int currentDebugLineIndex = 0;
+
+    double lastDebugUpdate = 0;
 public:
     explicit EntityManager(ServiceContainer *pContainer);
 
@@ -68,6 +74,8 @@ public:
     void render();
 
     void addRandom();
+
+    void renderDebugLine(const std::string &text);
 
     void addAtPosition(const Vector2 &p, int direction);
 };

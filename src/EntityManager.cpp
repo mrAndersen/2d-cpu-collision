@@ -42,6 +42,12 @@ void EntityManager::update() {
 
     Rectangle screen(0, 0, pContainer->width, pContainer->height);
 
+    if (IsKeyPressed(KEY_KP_ADD)) {
+        for (int i = 0; i < 128; ++i) {
+            addRandom();
+        }
+    }
+
     if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
         if (bolderRadius == 0) {
             bolderStartDrag = mouse;
@@ -93,24 +99,31 @@ void EntityManager::update() {
         pBucket->second.elements.clear();
     }
 
-    for (auto &pair: elements) {
-        for (auto &e: pair.second) {
-            auto pElement = &e;
-            pElement->updateBucketIndex(cols, rows, bucketWidth, bucketHeight);
+    elementCount = 0;
 
-            for (auto &i: pElement->buckets) {
-                buckets.at(i).elements.emplace_back(pElement);
+    for (auto &b: elements) {
+        auto it = b.second.begin();
+
+        while (it != b.second.end()) {
+            for (auto &i: it->buckets) {
+                buckets[i].elements.emplace_back(&(*it));
+            }
+
+            if (it->isDeleted) {
+                it = b.second.erase(it);
+            } else {
+                it++;
+                elementCount++;
             }
         }
     }
 
     updates = 0;
+    threadThrottle = 0;
 
     for (int i = 0; i < threads; ++i) {
-        auto portion = &elements.at(i);
-
-        std::thread worker([&, portion]() {
-//            LockGuard l(elementMutex);
+        std::thread worker([&, i]() {
+            auto portion = &elements.at(i);
 
             for (auto &e: *portion) {
                 auto pElement = &e;
@@ -123,6 +136,7 @@ void EntityManager::update() {
 
                 if (!pElement->isDeleted) {
                     pElement->update(nearby, screen, GetFrameTime() * 1000);
+                    pElement->updateBucketIndex(cols, rows, bucketWidth, bucketHeight);
                 }
             }
 
@@ -133,22 +147,8 @@ void EntityManager::update() {
     }
 
     while (updates.load() < threads) {
-        usleep(100);
-    }
-
-    elementCount = 0;
-
-    for (auto &b: elements) {
-        auto it = b.second.begin();
-
-        while (it != b.second.end()) {
-            if (it->isDeleted) {
-                it = b.second.erase(it);
-            } else {
-                it++;
-                elementCount++;
-            }
-        }
+        usleep(5);
+        threadThrottle += 5;
     }
 
     updateMs = (GetTime() - start) * 1000;
@@ -178,7 +178,14 @@ void EntityManager::render() {
             }
 
             Color color = e.isBullet ? MAGENTA : RAYWHITE;
-            DrawCircle((int) pElement->position.x, (int) pElement->position.y, pElement->radius, color);
+//            DrawCircle((int) pElement->position.x, (int) pElement->position.y, pElement->radius, color);
+            DrawRectangle(
+                    (int) pElement->position.x - pElement->radius / 2,
+                    (int) pElement->position.y - pElement->radius / 2,
+                    pElement->radius,
+                    pElement->radius,
+                    color
+            );
 
             if (debug >= 2) {
                 std::string indexes;
@@ -192,10 +199,15 @@ void EntityManager::render() {
         }
     }
 
-    DrawText(std::to_string(GetFPS()).c_str(), 20, 20, 20, GREEN);
-    DrawText(std::format("Update = {:.2f}", updateMs).c_str(), 20, 40, 20, GREEN);
-    DrawText(std::format("Render = {:.2f}", renderMs).c_str(), 20, 60, 20, GREEN);
-    DrawText(std::format("Elements = {}", elementCount).c_str(), 20, 80, 20, GREEN);
+    DrawRectangle(10, 10, 400, 200, Color(0, 0, 0, 200));
+    currentDebugLineIndex = 0;
+
+    renderDebugLine(std::format("FPS = {}", GetFPS()));
+    renderDebugLine(std::format("Elements = {}", elementCount));
+    renderDebugLine(std::format("Update = {:.2f}", updateMs));
+    renderDebugLine(std::format("Render = {:.2f}", renderMs));
+    renderDebugLine(std::format("Throttle = {}", threadThrottle));
+    renderDebugLine(std::format("Threads = {}", threads));
 
     if (debug >= 1) {
         for (auto &b: buckets) {
@@ -212,6 +224,12 @@ void EntityManager::render() {
 
     renderMs = (GetTime() - start) * 1000;
 }
+
+void EntityManager::renderDebugLine(const std::string &text) {
+    currentDebugLineIndex++;
+    DrawText(text.c_str(), 20, currentDebugLineIndex * 20, 20, ORANGE);
+}
+
 
 void EntityManager::addRandom() {
     Entity e;

@@ -24,11 +24,15 @@ public:
 
     std::vector<int> buckets = {};
 
-    Rectangle getAsRect() const {
+    Entity() {
+        this->buckets.reserve(4);
+    }
+
+    [[nodiscard]] Rectangle getAsRect() const {
         return {position.x - radius, position.y - radius, radius * 2, radius * 2};
     }
 
-    Vec2 getVelocity() const {
+    [[nodiscard]] Vec2 getVelocity() const {
         float radian = direction * M_PI / 180.0;
         return {std::cos(radian) * speed, std::sin(radian) * speed};
     }
@@ -38,8 +42,7 @@ public:
         direction = std::atan2(velocity.y, velocity.x) * 180.0 / M_PI;
     }
 
-
-    int getRandomOppositeDirection() {
+    int getRandomOppositeDirection() const {
         auto target = direction + 180;
 
         if (random(0, 1) == 0) {
@@ -153,13 +156,6 @@ public:
 
             if (position.y - radius < 0) {
                 position.y = radius;
-            }
-        }
-
-        {
-            //nearby
-            if (!nearby.empty()) {
-
             }
         }
 

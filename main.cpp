@@ -5,9 +5,10 @@
 int main() {
     auto container = ServiceContainer::build();
 
-    for (int i = 0; i < 4096; ++i) {
+    for (int i = 0; i < 8096; ++i) {
         container->pEntityManager->addRandom();
     }
+
 
     while (!WindowShouldClose()) {
         if (IsWindowResized()) {
