@@ -34,3 +34,5 @@ struct Vec2 {
 
 
 int random(int min, int max);
+
+float distance(const Vec2 &vec1, const Vec2 &vec2);

@@ -6,8 +6,6 @@
 
 class Entity {
 public:
-    int bucket = 0;
-
     float speed = 0.25;
 
     float radius = 5.0;
@@ -79,9 +77,8 @@ public:
         }
     }
 
-    void update(const std::vector<Entity *> &nearby, Rectangle screen, float dt) {
-        float restitution = 0.5f; // Adjust as needed
-
+    void update(float restitution, const std::vector<Entity *> &nearby, Rectangle screen,
+                float dt) {
         move(dt * speed, direction);
 
         {
@@ -93,9 +90,7 @@ public:
                     }
 
                     float min = radius + target->radius;
-                    float dx = position.x - target->position.x;
-                    float dy = position.y - target->position.y;
-                    float current = sqrtf(dx * dx + dy * dy);
+                    float current = distance(position, target->position);
 
                     if (current < min) {
                         if (isBullet) {

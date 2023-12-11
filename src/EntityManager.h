@@ -37,6 +37,8 @@ protected:
 
     int rows = 10;
 
+    float elasticity = 0.5f;
+
     int cols = 10;
 
     int debug = 0;
@@ -49,7 +51,11 @@ protected:
 
     float bolderRadius = 0;
 
+    int bolderType = 0;
+
     int elementCount = 0;
+
+    int drawType = 0;
 
     Vector2 bolderStartDrag;
 

@@ -42,21 +42,39 @@ void EntityManager::update() {
 
     Rectangle screen(0, 0, pContainer->width, pContainer->height);
 
+    if (IsKeyPressed(KEY_KP_6)) {
+        elasticity += 0.1;
+    }
+
+    if (IsKeyPressed(KEY_KP_3)) {
+        elasticity -= 0.1;
+    }
+
+    if (elasticity <= 0) {
+        elasticity = 0.1;
+    }
+
+    if (elasticity >= 1) {
+        elasticity = 1;
+    }
+
     if (IsKeyPressed(KEY_KP_ADD)) {
         for (int i = 0; i < 1024; ++i) {
             addRandom();
         }
     }
 
-    if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+    if (IsMouseButtonDown(MOUSE_BUTTON_LEFT) || IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
         if (bolderRadius == 0) {
             bolderStartDrag = mouse;
+            bolderType = IsMouseButtonDown(MOUSE_BUTTON_LEFT) ? 0 : 1;
         }
 
         bolderRadius += dt * 0.1;
     }
 
-    if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
+    if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT) || IsMouseButtonReleased(MOUSE_BUTTON_RIGHT)) {
+        auto power = distance({mouse.x, mouse.y}, {bolderStartDrag.x, bolderStartDrag.y});
         auto angle = std::atan2(mouse.y - bolderStartDrag.y, mouse.x - bolderStartDrag.x) * (180 / PI);
         angle = ((int) angle + 180) % 360;
 
@@ -64,9 +82,9 @@ void EntityManager::update() {
         e.position = {bolderStartDrag.x, bolderStartDrag.y};
         e.radius = bolderRadius;
         e.direction = (int) angle;
-        e.speed = 2;
+        e.speed = power / 20;
 
-        if (bolderRadius >= 30) {
+        if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT)) {
             e.isBullet = true;
         }
 
@@ -83,6 +101,14 @@ void EntityManager::update() {
 
         if (debug > maxDebug) {
             debug = 0;
+        }
+    }
+
+    if (IsKeyPressed(KEY_F4)) {
+        drawType++;
+
+        if (drawType == 2) {
+            drawType = 0;
         }
     }
 
@@ -135,7 +161,7 @@ void EntityManager::update() {
                 }
 
                 if (!pElement->isDeleted) {
-                    pElement->update(nearby, screen, GetFrameTime() * 1000);
+                    pElement->update(elasticity, nearby, screen, GetFrameTime() * 1000);
                     pElement->updateBucketIndex(cols, rows, bucketWidth, bucketHeight);
                 }
             }
@@ -168,6 +194,7 @@ void EntityManager::add(const Entity &e) {
 void EntityManager::render() {
     auto start = GetTime();
     auto mouse = GetMousePosition();
+    auto bolderColor = bolderType == 0 ? RAYWHITE : RED;
 
     for (auto &pair: elements) {
         for (auto &e: pair.second) {
@@ -177,15 +204,21 @@ void EntityManager::render() {
                 continue;
             }
 
-            Color color = e.isBullet ? MAGENTA : RAYWHITE;
-//            DrawCircle((int) pElement->position.x, (int) pElement->position.y, pElement->radius, color);
-            DrawRectangle(
-                    (int) pElement->position.x - pElement->radius / 2,
-                    (int) pElement->position.y - pElement->radius / 2,
-                    pElement->radius,
-                    pElement->radius,
-                    color
-            );
+            Color color = e.isBullet ? bolderColor : RAYWHITE;
+
+            if (drawType == 0) {
+                DrawRectangle(
+                        (int) (pElement->position.x - pElement->radius / 2),
+                        (int) (pElement->position.y - pElement->radius / 2),
+                        (int) pElement->radius,
+                        (int) pElement->radius,
+                        color
+                );
+            }
+
+            if (drawType == 1) {
+                DrawCircle((int) pElement->position.x, (int) pElement->position.y, pElement->radius, color);
+            }
 
             if (debug >= 2) {
                 std::string indexes;
@@ -208,6 +241,7 @@ void EntityManager::render() {
     renderDebugLine(std::format("Render = {:.2f}", renderMs));
     renderDebugLine(std::format("Throttle = {}", threadThrottle));
     renderDebugLine(std::format("Threads = {}", threads));
+    renderDebugLine(std::format("Elasticity = {}", elasticity));
 
     if (debug >= 1) {
         for (auto &b: buckets) {
@@ -218,8 +252,32 @@ void EntityManager::render() {
     }
 
     if (bolderRadius > 0) {
-        DrawCircle(bolderStartDrag.x, bolderStartDrag.y, bolderRadius, MAGENTA);
-        DrawLine(mouse.x, mouse.y, bolderStartDrag.x, bolderStartDrag.y, MAGENTA);
+        if (drawType == 0) {
+            DrawRectangle(
+                    (int) (bolderStartDrag.x - bolderRadius / 2),
+                    (int) (bolderStartDrag.y - bolderRadius / 2),
+                    (int) bolderRadius,
+                    (int) bolderRadius,
+                    bolderColor
+            );
+        }
+
+        if (drawType == 1) {
+            DrawCircle(
+                    (int) bolderStartDrag.x,
+                    (int) bolderStartDrag.y,
+                    bolderRadius,
+                    bolderColor
+            );
+        }
+
+        DrawLine(
+                (int) mouse.x, +
+                        (int) mouse.y,
+                (int) bolderStartDrag.x,
+                (int) bolderStartDrag.y,
+                bolderColor
+        );
     }
 
     renderMs = (GetTime() - start) * 1000;
