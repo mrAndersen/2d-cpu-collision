@@ -2,6 +2,9 @@
 
 #include <random>
 #include "raylib.h"
+#include <mutex>
+
+using LockGuard = std::lock_guard<std::mutex>;
 
 struct Vec2 {
     float x = 0;

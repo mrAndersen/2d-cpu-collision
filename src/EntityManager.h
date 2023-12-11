@@ -25,7 +25,7 @@ protected:
 
     std::unordered_map<int, std::vector<Entity>> elements = {};
 
-    int threads = 8;
+    int threads = 4;
 
     int currentInsertIndex = 0;
 
@@ -45,9 +45,17 @@ protected:
 
     float renderMs = 0;
 
+    float bolderRadius = 0;
+
+    int elementCount = 0;
+
+    Vector2 bolderStartDrag;
+
     bool updating = true;
 
     std::atomic<int> updates = 0;
+
+    std::mutex elementMutex;
 
     void add(const Entity &e);
 

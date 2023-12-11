@@ -5,7 +5,6 @@
 int main() {
     auto container = ServiceContainer::build();
 
-
     for (int i = 0; i < 4096; ++i) {
         container->pEntityManager->addRandom();
     }

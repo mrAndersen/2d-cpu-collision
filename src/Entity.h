@@ -8,11 +8,15 @@ class Entity {
 public:
     int bucket = 0;
 
-    float speed = 0.5;
+    float speed = 0.25;
 
     float radius = 5.0;
 
     float acceleration = 5.0;
+
+    bool isBullet = false;
+
+    bool isDeleted = false;
 
     int direction = 0;
 
@@ -91,6 +95,11 @@ public:
                     float current = sqrtf(dx * dx + dy * dy);
 
                     if (current < min) {
+                        if (isBullet) {
+                            target->isDeleted = true;
+                            continue;
+                        }
+
                         auto collisionVector = position - target->position;
                         collisionVector = collisionVector.normalize();
 

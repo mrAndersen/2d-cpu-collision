@@ -37,8 +37,36 @@ void EntityManager::initBuckets() {
 
 void EntityManager::update() {
     auto start = GetTime();
+    auto mouse = GetMousePosition();
+    auto dt = GetFrameTime() * 1000;
 
     Rectangle screen(0, 0, pContainer->width, pContainer->height);
+
+    if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+        if (bolderRadius == 0) {
+            bolderStartDrag = mouse;
+        }
+
+        bolderRadius += dt * 0.1;
+    }
+
+    if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
+        auto angle = std::atan2(mouse.y - bolderStartDrag.y, mouse.x - bolderStartDrag.x) * (180 / PI);
+        angle = ((int) angle + 180) % 360;
+
+        Entity e;
+        e.position = {bolderStartDrag.x, bolderStartDrag.y};
+        e.radius = bolderRadius;
+        e.direction = (int) angle;
+        e.speed = 2;
+
+        if (bolderRadius >= 30) {
+            e.isBullet = true;
+        }
+
+        add(e);
+        bolderRadius = 0;
+    }
 
     if (IsKeyPressed((KEY_SPACE))) {
         updating = !updating;
@@ -82,6 +110,8 @@ void EntityManager::update() {
         auto portion = &elements.at(i);
 
         std::thread worker([&, portion]() {
+//            LockGuard l(elementMutex);
+
             for (auto &e: *portion) {
                 auto pElement = &e;
                 std::vector<Entity *> nearby = {};
@@ -91,7 +121,9 @@ void EntityManager::update() {
                     nearby.insert(nearby.end(), target.elements.begin(), target.elements.end());
                 }
 
-                pElement->update(nearby, screen, GetFrameTime() * 1000);
+                if (!pElement->isDeleted) {
+                    pElement->update(nearby, screen, GetFrameTime() * 1000);
+                }
             }
 
             updates++;
@@ -101,13 +133,30 @@ void EntityManager::update() {
     }
 
     while (updates.load() < threads) {
-        usleep(200);
+        usleep(100);
+    }
+
+    elementCount = 0;
+
+    for (auto &b: elements) {
+        auto it = b.second.begin();
+
+        while (it != b.second.end()) {
+            if (it->isDeleted) {
+                it = b.second.erase(it);
+            } else {
+                it++;
+                elementCount++;
+            }
+        }
     }
 
     updateMs = (GetTime() - start) * 1000;
 }
 
 void EntityManager::add(const Entity &e) {
+    LockGuard l(elementMutex);
+
     elements.at(currentInsertIndex).emplace_back(e);
     currentInsertIndex++;
 
@@ -118,29 +167,35 @@ void EntityManager::add(const Entity &e) {
 
 void EntityManager::render() {
     auto start = GetTime();
+    auto mouse = GetMousePosition();
 
     for (auto &pair: elements) {
         for (auto &e: pair.second) {
             auto pElement = &e;
-            DrawCircle(pElement->position.x, pElement->position.y, pElement->radius, RAYWHITE);
+
+            if (pElement->isDeleted) {
+                continue;
+            }
+
+            Color color = e.isBullet ? MAGENTA : RAYWHITE;
+            DrawCircle((int) pElement->position.x, (int) pElement->position.y, pElement->radius, color);
 
             if (debug >= 2) {
-                std::string indexes = "";
+                std::string indexes;
 
                 for (auto &b: pElement->buckets) {
                     indexes += std::to_string(b);
                 }
 
-                DrawText(indexes.c_str(), pElement->position.x, pElement->position.y, 16, GREEN);
+                DrawText(indexes.c_str(), (int) pElement->position.x, (int) pElement->position.y, 16, GREEN);
             }
         }
     }
 
-    int offset = 200;
-
-    DrawText(std::to_string(GetFPS()).c_str(), pContainer->width - offset, 20, 20, GREEN);
-    DrawText(std::format("Update = {:.2f}", updateMs).c_str(), pContainer->width - offset, 40, 20, GREEN);
-    DrawText(std::format("Render = {:.2f}", renderMs).c_str(), pContainer->width - offset, 60, 20, GREEN);
+    DrawText(std::to_string(GetFPS()).c_str(), 20, 20, 20, GREEN);
+    DrawText(std::format("Update = {:.2f}", updateMs).c_str(), 20, 40, 20, GREEN);
+    DrawText(std::format("Render = {:.2f}", renderMs).c_str(), 20, 60, 20, GREEN);
+    DrawText(std::format("Elements = {}", elementCount).c_str(), 20, 80, 20, GREEN);
 
     if (debug >= 1) {
         for (auto &b: buckets) {
@@ -148,6 +203,11 @@ void EntityManager::render() {
                      YELLOW);
             DrawRectangleLinesEx(b.second.rect, 1, WHITE);
         }
+    }
+
+    if (bolderRadius > 0) {
+        DrawCircle(bolderStartDrag.x, bolderStartDrag.y, bolderRadius, MAGENTA);
+        DrawLine(mouse.x, mouse.y, bolderStartDrag.x, bolderStartDrag.y, MAGENTA);
     }
 
     renderMs = (GetTime() - start) * 1000;
