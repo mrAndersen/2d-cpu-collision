@@ -25,7 +25,7 @@ protected:
 
     std::unordered_map<int, std::vector<Entity>> elements = {};
 
-    int threads = 8;
+    int threads = 12;
 
     int threadThrottle = 0;
 

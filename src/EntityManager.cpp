@@ -43,7 +43,7 @@ void EntityManager::update() {
     Rectangle screen(0, 0, pContainer->width, pContainer->height);
 
     if (IsKeyPressed(KEY_KP_ADD)) {
-        for (int i = 0; i < 128; ++i) {
+        for (int i = 0; i < 1024; ++i) {
             addRandom();
         }
     }
