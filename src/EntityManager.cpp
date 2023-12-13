@@ -173,7 +173,10 @@ void EntityManager::update() {
     }
 
     while (updates.load() < threads) {
-        usleep(5);
+        timespec t = {};
+        t.tv_sec = 0;
+        t.tv_nsec = 5000;
+        nanosleep(&t, nullptr);
         threadThrottle += 5;
     }
 
@@ -236,6 +239,7 @@ void EntityManager::render() {
     currentDebugLineIndex = 0;
 
     renderDebugLine(std::format("FPS = {}", GetFPS()));
+    renderDebugLine(std::format("UPS = {:.0f}", (1000.0f / updateMs)));
     renderDebugLine(std::format("Elements = {}", elementCount));
     renderDebugLine(std::format("Update = {:.2f}", updateMs));
     renderDebugLine(std::format("Render = {:.2f}", renderMs));
