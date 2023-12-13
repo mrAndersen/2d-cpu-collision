@@ -22,7 +22,7 @@ void EntityManager::initBuckets() {
         for (int j = 0; j < pContainer->height; j += bucketHeight) {
             Bucket b;
 
-            b.rect = Rectangle((float) i, (float) j, (float) bucketWidth, (float) bucketHeight);
+            b.rect = Rectangle({(float) i, (float) j, (float) bucketWidth, (float) bucketHeight});
             buckets.emplace(index, b);
 
             index++;
@@ -40,7 +40,7 @@ void EntityManager::update() {
     auto mouse = GetMousePosition();
     auto dt = GetFrameTime() * 1000;
 
-    Rectangle screen(0, 0, pContainer->width, pContainer->height);
+    Rectangle screen({0, 0, (float) pContainer->width, (float) pContainer->height});
 
     if (IsKeyPressed(KEY_KP_6)) {
         elasticity += 0.1;
@@ -232,7 +232,7 @@ void EntityManager::render() {
         }
     }
 
-    DrawRectangle(10, 10, 400, 200, Color(0, 0, 0, 200));
+    DrawRectangle(10, 10, 400, 200, Color({0, 0, 0, 200}));
     currentDebugLineIndex = 0;
 
     renderDebugLine(std::format("FPS = {}", GetFPS()));
@@ -305,7 +305,7 @@ void EntityManager::addAtPosition(const Vector2 &p, int direction) {
     Entity e;
     e.radius = (float) random(3, 5);
     e.direction = direction;
-    e.position = Vec2(p.x, p.y);
+    e.position = Vec2({p.x, p.y});
 
     add(e);
 }
